@@ -1,6 +1,5 @@
 import asyncio
 import json
-from custom_agents.agent_1 import Agent1
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -8,8 +7,9 @@ from dotenv import load_dotenv
 from langfuse import get_client
 from openinference.instrumentation.openai_agents import OpenAIAgentsInstrumentor
 
-load_dotenv(override=True)
+from src.deep_research import DeepResearch
 
+load_dotenv(override=True)
 
 # Create the FastAPI application instance
 app = FastAPI()
@@ -36,7 +36,8 @@ if langfuse.auth_check():
 else:
     print("Authentication failed. Please check your credentials and host.")
 
-agent1 = Agent1()
+# Remove the global deep_research instance since we'll create it per request
+
 
 # Define a path operation (route)
 @app.get("/")
@@ -50,10 +51,12 @@ async def chat_endpoint( request: dict):
     async def event_generator():
         print("Received request:", request['messages'][-1])
         print("Type of request:", type(request))
-        # Placeholder: Your agent logic generates and yields events
-        joke = await agent1.run(request['user_id'], request['messages'][-1]['content'][-1]['text'])
+        
+        # Use async context manager to ensure proper MCP server connection
+        deep_research = DeepResearch()
+        research_queries = await deep_research.run(request['messages'][-1]['content'][-1]['text'])
 
-        yield f"data: {json.dumps({'id': '2', 'role': 'assistant', 'content': joke})}\n\n"   # ... more events
+        yield f"data: {json.dumps({'id': '2', 'role': 'assistant', 'content': research_queries})}\n\n"
 
     # Set media_type to 'text/event-stream' for SSE
     return StreamingResponse(event_generator(), media_type='text/event-stream')
