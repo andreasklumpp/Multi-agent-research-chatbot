@@ -36,8 +36,7 @@ if langfuse.auth_check():
 else:
     print("Authentication failed. Please check your credentials and host.")
 
-# Remove the global deep_research instance since we'll create it per request
-
+deep_research = DeepResearch();
 
 # Define a path operation (route)
 @app.get("/")
@@ -51,12 +50,10 @@ async def chat_endpoint( request: dict):
     async def event_generator():
         print("Received request:", request['messages'][-1])
         print("Type of request:", type(request))
-        
-        # Use async context manager to ensure proper MCP server connection
-        deep_research = DeepResearch()
+        # Placeholder: Your agent logic generates and yields events
         research_queries = await deep_research.run(request['messages'][-1]['content'][-1]['text'])
 
-        yield f"data: {json.dumps({'id': '2', 'role': 'assistant', 'content': research_queries})}\n\n"
+        yield f"data: {json.dumps({'id': '2', 'role': 'assistant', 'content': research_queries})}\n\n"   # ... more events
 
     # Set media_type to 'text/event-stream' for SSE
     return StreamingResponse(event_generator(), media_type='text/event-stream')
