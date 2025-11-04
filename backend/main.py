@@ -47,6 +47,7 @@ async def read_root():
 @app.post("/chat")
 async def chat_endpoint( request: dict):
     print("Chat endpoint called with request:", request)
+    
     async def event_generator():
         print("Received request:", request['messages'][-1])
         print("Type of request:", type(request))

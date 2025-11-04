@@ -1,21 +1,33 @@
 from langfuse import observe
+from src.custom_agents.research_readiness_agent import ResearchReadinessAgent, ResearchReadiness
 from src.custom_agents.report_agent import ReportAgent
 from src.custom_agents.research_assistant_agent import ResearchAssistantAgent
 from src.custom_agents.researcher_agent import ResearcherAgent
 from src.mcp_servers.search_mcp import get_search_mcp_server
 from src.models.research_result import ResearchResult
+from agents import SQLiteSession
 
 
 class DeepResearch:
     def __init__(self):
         self.researchAssistant = ResearchAssistantAgent()
         self.reportAgent = ReportAgent()
+        self.clarifierAgent = ResearchReadinessAgent()
         self.searchMcpServer = get_search_mcp_server()
         self.researchAgent = None
+        self.session = SQLiteSession("conversation_123", "data/assistant_sessions.db")
 
     @observe(name="Deep Research")
     async def run(self, query: str) -> str:
-        # Use async context manager to ensure proper MCP server connection
+        readiness = await self.clarify_query(query)
+
+        if readiness.status == "INCOMPLETE":
+            return readiness.follow_up_question
+        else:
+            return "I have enough details"
+
+        return clarification
+
         research_queries = await self.prepare_research(query)
         print("Research Queries:", research_queries)
 
@@ -24,6 +36,11 @@ class DeepResearch:
         report = await self.report(query, results)
 
         return report
+
+    async def clarify_query(self, query: str) -> ResearchReadiness:
+        clarification = await self.clarifierAgent.run(query, session=self.session)
+
+        return clarification
 
     async def prepare_research(self, query: str) -> list[str]:
         research_queries = await self.researchAssistant.run(query)
