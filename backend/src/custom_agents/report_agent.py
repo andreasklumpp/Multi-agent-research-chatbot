@@ -1,17 +1,13 @@
 from agents import Agent, Runner
 from langfuse import observe
 
-from src.models.research_result import ResearchResult
+from src.models.research_result import ResearchOutput
 
 
-INSTRUCTIONS = (
-    "You are a senior researcher tasked with writing a cohesive report for a research query."
-    "You will be provided with the original query, and some initial research done by a research agent.\n"
-    "You should first come up with an outline for the report that describes the structure and "
-    "flow of the report. Then, generate the report and return that as your final output.\n"
-    "The final output should be in markdown format, and it should be lengthy and detailed. Aim " 
-    "for 4-5 paragraphs of content, at least 400 words."
-)
+INSTRUCTIONS = """
+    You are a report generation agent. Given an initial research query and a list of research results,
+    your task is to synthesize the information into a coherent and comprehensive report that addresses the initial query.
+    The report should be well structured, with clear sections summarizing the key findings from each research output."""
 
 class ReportAgent:
 
@@ -27,12 +23,12 @@ class ReportAgent:
         )
 
     @observe(name="Report Agent - run")
-    async def run(self, initial_query: str, research_results: list[ResearchResult]) -> str:
+    async def run(self, initial_query: str, research_outputs: list[ResearchOutput]) -> str:
         prompt = f"Initial Query: {initial_query}\n\n"
         prompt += "Research Results:\n"
-        for rr in research_results:
-            print("Research Result:", rr)
-            prompt += f"- {rr.query}: {rr.result}\n"
+        for ro in research_outputs:
+            print("Research Result:", ro)
+            prompt += f"- {ro.research_subject.topic}: {ro.research_output}\n"
 
         response = await Runner.run(self.agent, prompt)
         return response.final_output

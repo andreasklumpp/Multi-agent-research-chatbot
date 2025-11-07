@@ -9,14 +9,16 @@ import {
 } from "@assistant-ui/react";
 
 const FastAPIAdapter: ChatModelAdapter = {
+
   async *run({ messages, abortSignal }) {
+    const threadId = sessionStorage.getItem('simpleSessionId') || "default-thread";
     const response = await fetch("http://localhost:8000/chat", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+      "Content-Type": "application/json",
       },
       // USER ID Should come from authenticated user context
-      body: JSON.stringify({ messages, user_id: "user-123" }), 
+      body: JSON.stringify({ messages, user_id: "user-123", thread_id: threadId }), 
       signal: abortSignal,
     });
 
@@ -58,7 +60,8 @@ export function MyRuntimeProvider({
   children: ReactNode;
 }>) {
   const runtime = useLocalRuntime(FastAPIAdapter);
-
+ 
+  
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       {children}
